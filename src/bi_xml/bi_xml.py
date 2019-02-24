@@ -4,12 +4,15 @@ Created on Feb 7, 2019
 @author: hmun
 '''
 import xml.etree.ElementTree as ET
+from argparse import ArgumentParser
 from InfoAreaMap import IAM
 from InfoObject import IO
 
 class BiXML:
 
     def __init__(self, in_file, io_map_file, io_common_file, io_existing_file):
+        if in_file == '':
+            return
         ET.register_namespace('XMISAPBI', "com.sap.bi/metadata/1.0")
         xml_file_name = in_file
         self.io = IO(io_map_file, io_common_file, io_existing_file)
@@ -23,6 +26,8 @@ class BiXML:
         self.out_io = []
 
     def convert(self, add_comp, no_description, new_description):
+        if self.doc is None:
+            return
         try:
             for content in self.doc.findall('XMI.content'):
                 for child in content.findall('{com.sap.bi/metadata/1.0}com.sap.bw.cwm.core.Document'):
@@ -326,8 +331,10 @@ class BiXML:
         
             
     def write(self, out_file, out_io_map_file):
-        self.doc.write(out_file)
-        self.io.writeInfoObjectMap(out_io_map_file)
+        if out_file != '':
+            self.doc.write(out_file)
+        if out_io_map_file != '':
+            self.io.writeInfoObjectMap(out_io_map_file)
         
             
     def xmid2name(self, xmid):
@@ -338,6 +345,8 @@ class BiXML:
             return ''
             
     def dumpObjects(self, out_file):
+        if out_file == '':
+            return
         self.out_tags = []
         self.out_xmid = []
         self.out_io = []
@@ -374,17 +383,60 @@ class BiXML:
             self.dumpRecursive(child, level)
                 
 if __name__ == '__main__':
-    xml_in = '/users/hmun/SparkleShare/MSF/BI/ZCOPC_O07_DWH_necessary_bhd.xml'
-    xml_out = '/users/hmun/SparkleShare/MSF/BI/ZCOPC_O07_DWH_necessary_bhd_out.xml'
-    dump_out = '/users/hmun/SparkleShare/MSF/BI/dumpFile.txt'
-    dump_out2 = '/users/hmun/SparkleShare/MSF/BI/dumpFile_after.txt'
-    io_map_file = '/users/hmun/SparkleShare/MSF/BI/io_map.csv'
-    io_common_file = '/users/hmun/SparkleShare/MSF/BI/io_common.csv'
-    io_existing_file = '/users/hmun/SparkleShare/MSF/BI/io_existing.csv'
 
+    compound = ''
+#    xml_in = '/users/hmun/SparkleShare/MSF/BI/ZCOPC_O07_DWH_necessary_bhd.xml'
+#    xml_out = '/users/hmun/SparkleShare/MSF/BI/ZCOPC_O07_DWH_necessary_bhd_out.xml'
+#    dump_out = '/users/hmun/SparkleShare/MSF/BI/dumpFile.txt'
+#    dump_out2 = '/users/hmun/SparkleShare/MSF/BI/dumpFile_after.txt'
+#    io_map_file = '/users/hmun/SparkleShare/MSF/BI/io_map.csv'
+#    io_common_file = '/users/hmun/SparkleShare/MSF/BI/io_common.csv'
+#    io_existing_file = '/users/hmun/SparkleShare/MSF/BI/io_existing.csv'
+    xml_in = ''
+    xml_out = ''
+    dump_out = ''
+    dump_out2 = ''
+    io_map_file = ''
+    io_common_file = ''
+    io_existing_file = ''
+    no_description = False
+    new_description = False
+
+    parser = ArgumentParser()
+    parser.add_argument("-i", "--in_file", dest="xml_in",
+                    help="import xml from in_file")
+    parser.add_argument("-o", "--out_file", dest="xml_out",
+                    help="import xml from out_file")
+    parser.add_argument("-d", "--dump_file", dest="dump_out",
+                    help="dump parsing information to dump_file")
+    parser.add_argument("-m", "--io_map", dest="io_map_file",
+                    help="read InfoObject name mapping from io_map")
+    parser.add_argument("-c", "--io_common", dest="io_common_file",
+                    help="read common InfoObjects from io_common")
+    parser.add_argument("-e", "--io_existing", dest="io_existing_file",
+                    help="read existing InfoObjects from io_existing")
+
+    parser.add_argument("-p", "--compound", dest="compound", 
+                    help="compound all new InfoObjects to InfoObject compound")
+    parser.add_argument("--no_description", dest="no_description", action='store_true',
+                    help="remove the existing Description ojects")
+    parser.add_argument("--new_description", dest="new_description", action='store_true',
+                    help="create new Description objects from annotation tags")
+    args = parser.parse_args()
+
+    xml_in = args.xml_in
+    xml_out = args.xml_out
+    dump_out = args.dump_out
+    dump_out2 = dump_out+"_after"
+    io_map_file = args.io_map_file
+    io_common_file = args.io_common_file
+    io_existing_file = args.io_existing_file
+    no_description = args.no_description
+    new_description = args.new_description
+        
     biXML = BiXML(xml_in, io_map_file, io_common_file, io_existing_file)
     biXML.dumpObjects(dump_out)
-    biXML.convert('0SOURSYSTEM', True, True)
+    biXML.convert(compound, True, True)
     biXML.clean_existing()
     biXML.write(xml_out, io_map_file)
     biXML.dumpObjects(dump_out2)
