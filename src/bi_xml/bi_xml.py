@@ -217,18 +217,6 @@ class BiXML:
                                 new_elem_ref.append(new_child_ref)
                                 content.append(new_elem_ref)
                     
-#                    else:
-#                        for child in elem.findall('{com.sap.bi/metadata/1.0}com.sap.bw.cwm.core.InfoObject.descriptionLong'):
-#                            self.io.sav_xmi_idref_uuid(child.attrib['xmi.idref'])
-#                        for child in elem.findall('{com.sap.bi/metadata/1.0}com.sap.bw.cwm.core.InfoObject.descriptionShort'):
-#                            self.io.sav_xmi_idref_uuid(child.attrib['xmi.idref'])
-#                        for child in elem.findall('{com.sap.bi/metadata/1.0}com.sap.bw.cwm.core.InfoObject.infoObjectAttributeAssoc'):
-#                            self.io.sav_xmi_idref_uuid(child.attrib['xmi.idref'])
-#                        for child in elem.findall('{com.sap.bi/metadata/1.0}com.sap.bw.cwm.core.InfoObject.infoObjectNavAttributeAssoc'):
-#                            self.io.sav_xmi_idref_uuid(child.attrib['xmi.idref'])
-#                        for child in elem.findall('{com.sap.bi/metadata/1.0}com.sap.bw.cwm.core.InfoObject.infoObjectCompoundAssoc'):
-#                            self.io.sav_xmi_idref_uuid(child.attrib['xmi.idref'])
-                        
                 for elem in content.findall('{com.sap.bi/metadata/1.0}com.sap.bw.cwm.foundation.DataFlowAssoc'):
                     content.remove(elem)
 
@@ -291,17 +279,6 @@ class BiXML:
                         new_elem_ref.append(new_child_ref)
                         content.append(new_elem_ref)                                
                     
-#                name = elem.attrib.get('name')
-#                name = 'X' + name[2:]
-#                print(name)
-#               InfoObject.setAttribute('name',name)
-#            for InfoObject in self.doc.getElementsByTagName('XMISAPBI:com.sap.bw.cwm.core.InfoObject.document'):
-                # print(InfoObject.tag)
-#                parentNode = InfoObject.parentNode
-#                parentNode.remove(InfoObject)
-                # InfoObject.unlink()
-#            with open(outFile, "w") as xml_file:
-#                xml_file.close()
         except Exception as e:
             print(e.message)
             
@@ -398,13 +375,6 @@ class BiXML:
 if __name__ == '__main__':
 
     compound = ''
-#    xml_in = '/users/hmun/SparkleShare/MSF/BI/ZCOPC_O07_DWH_necessary_bhd.xml'
-#    xml_out = '/users/hmun/SparkleShare/MSF/BI/ZCOPC_O07_DWH_necessary_bhd_out.xml'
-#    dump_out = '/users/hmun/SparkleShare/MSF/BI/dumpFile.txt'
-#    dump_out2 = '/users/hmun/SparkleShare/MSF/BI/dumpFile_after.txt'
-#    io_map_file = '/users/hmun/SparkleShare/MSF/BI/io_map.csv'
-#    io_common_file = '/users/hmun/SparkleShare/MSF/BI/io_common.csv'
-#    io_existing_file = '/users/hmun/SparkleShare/MSF/BI/io_existing.csv'
     xml_in = ''
     xml_out = ''
     dump_out = ''
