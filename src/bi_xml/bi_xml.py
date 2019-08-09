@@ -20,6 +20,7 @@ import xml.etree.ElementTree as ET
 from argparse import ArgumentParser
 from InfoAreaMap import IAM
 from InfoObject import IO
+from DSO import DSO
 
 class BiXML:
 
@@ -30,6 +31,7 @@ class BiXML:
         xml_file_name = in_file
         self.io = IO(io_map_file, io_common_file, io_existing_file)
         self.iam = IAM()
+        self.dso = DSO()
         try:
             self.doc = ET.parse(xml_file_name)
         except Exception as e:
@@ -217,6 +219,70 @@ class BiXML:
                                 new_elem_ref.append(new_child_ref)
                                 content.append(new_elem_ref)
                     
+                for elem in content.findall('{com.sap.bi/metadata/1.0}com.sap.bw.cwm.relational.ODS'):
+                    print(elem.tag)
+                    name = elem.attrib['name']
+                    print(name)
+                    for child in elem.findall('{com.sap.bi/metadata/1.0}com.sap.bw.cwm.relational.ODS.document'):
+                        elem.remove(child)
+                    for child in elem.findall('{com.sap.bi/metadata/1.0}com.sap.bw.cwm.relational.ODS.document'):
+                        elem.remove(child)
+                    newname = self.dso.newName(name)
+                    elem.attrib['name'] = newname
+                    if elem.attrib['originalSystem'] != '':
+                        elem.attrib['originalSystem'] = self.io.originalSystem()
+                    if elem.attrib['owner'] != '':
+                        elem.attrib['owner'] = self.io.owner()
+                    if elem.attrib['package'] != '':
+                        elem.attrib['package'] = self.io.package()
+                    for child in elem.findall('{com.sap.bi/metadata/1.0}com.sap.bw.cwm.relational.ODS.infoObjectKey'):
+                        child.attrib['xmi.idref'] = self.io.substName(child.attrib['xmi.idref'])
+                    for child in elem.findall('{com.sap.bi/metadata/1.0}com.sap.bw.cwm.relational.ODS.infoObjectNoKey'):
+                        child.attrib['xmi.idref'] = self.io.substName(child.attrib['xmi.idref'])                        
+
+                    for child in elem.findall('{com.sap.bi/metadata/1.0}com.sap.bw.cwm.relational.ODS.descriptionLong'):
+                        xp = './/'+'{com.sap.bi/metadata/1.0}com.sap.bw.cwm.core.Description[@xmi.id="'+child.attrib['xmi.idref']+'"]'
+                        child.attrib['xmi.idref'] = self.dso.get_xmi_idref_uuid(child.attrib['xmi.idref'])
+                        elem_ref = content.find(xp)
+                        if elem_ref is not None:
+                            elem_ref.attrib['name'] = self.dso.get_name_uuid(elem_ref.attrib['name'])
+                            elem_ref.attrib['xmi.id'] = self.dso.get_xmi_idref_uuid(elem_ref.attrib['xmi.id'])                    
+                            if no_description:
+                                content.remove(elem_ref)
+                        if no_description:
+                            elem.remove(child)
+                    for child in elem.findall('{com.sap.bi/metadata/1.0}com.sap.bw.cwm.relational.ODS.descriptionShort'):
+                        xp = './/'+'{com.sap.bi/metadata/1.0}com.sap.bw.cwm.core.Description[@xmi.id="'+child.attrib['xmi.idref']+'"]'
+                        child.attrib['xmi.idref'] = self.dso.get_xmi_idref_uuid(child.attrib['xmi.idref'])
+                        elem_ref = content.find(xp)
+                        if elem_ref is not None:
+                            elem_ref.attrib['name'] = self.dso.get_name_uuid(elem_ref.attrib['name'])
+                            elem_ref.attrib['xmi.id'] = self.dso.get_xmi_idref_uuid(elem_ref.attrib['xmi.id'])                    
+                            if no_description:
+                                content.remove(elem_ref)
+                        if no_description:
+                            elem.remove(child)
+                    # generate one new description from the InfoObjects annotation
+                    if new_description:
+                        new_child = ET.Element('{com.sap.bi/metadata/1.0}com.sap.bw.cwm.core.ODS.descriptionShort')
+                        new_uuid = self.dso.new_uuid('0000000000000000000000000')
+                        new_child.attrib['xmi.idref'] = 'com.sap.bw.cwm.core.Description::'+new_uuid
+                        elem.append(new_child)   
+                        new_child = ET.Element('{com.sap.bi/metadata/1.0}com.sap.bw.cwm.core.ODS.descriptionLong')
+                        new_child.attrib['xmi.idref'] = 'com.sap.bw.cwm.core.Description::'+new_uuid
+                        elem.append(new_child)   
+                        new_elem_ref = ET.Element('{com.sap.bi/metadata/1.0}com.sap.bw.cwm.core.Description')
+                        new_elem_ref.attrib['xmi.id'] = 'com.sap.bw.cwm.core.Description::'+new_uuid
+                        new_elem_ref.attrib['name'] = new_uuid
+                        new_elem_ref.attrib['annotation'] = ''
+                        new_elem_ref.attrib['language'] = 'EN'
+                        new_elem_ref.attrib['mimeType'] = 'text/plain'
+                        new_elem_ref.attrib['isBinary'] = 'false'
+                        new_child_ref = ET.Element('{com.sap.bi/metadata/1.0}com.sap.bw.cwm.core.Description.body')
+                        new_child_ref.text = elem.attrib['annotation'] 
+                        new_elem_ref.append(new_child_ref)
+                        content.append(new_elem_ref)                                
+
                 for elem in content.findall('{com.sap.bi/metadata/1.0}com.sap.bw.cwm.foundation.DataFlowAssoc'):
                     content.remove(elem)
 
@@ -281,7 +347,15 @@ class BiXML:
                     
         except Exception as e:
             print(e.message)
-            
+
+    def clean_messages(self):
+        try:
+            for content in self.doc.findall('XMI.content'):
+                for elem in content.findall('Messages'):
+                    content.remove(elem)                   
+        except Exception as e:
+            print(e.message)
+                    
     def clean_existing(self):
         try:
             for content in self.doc.findall('XMI.content'):
@@ -315,11 +389,54 @@ class BiXML:
                             elem_ref = content.find(xp)
                             if elem_ref is not None:
                                 content.remove(elem_ref)
+                        for child in elem.findall('{com.sap.bi/metadata/1.0}com.sap.bw.cwm.core.InfoObject.transferRoutine'):
+                            xp = './/'+'{com.sap.bi/metadata/1.0}com.sap.bw.cwm.core.RoutineABAP[@xmi.id="'+child.attrib['xmi.idref']+',InfoObject con"]'
+                            elem_ref = content.find(xp)
+                            if elem_ref is not None:
+                                content.remove(elem_ref)
                         content.remove(elem)        
         except Exception as e:
             print(e.message)
         
-            
+    def delete_obsolete(self):
+        try:
+            for content in self.doc.findall('XMI.content'):
+                for elem in content.findall('{com.sap.bi/metadata/1.0}com.sap.bw.cwm.olap.InfoCube'):
+                    print(elem.tag)
+                    for child in elem.findall('{com.sap.bi/metadata/1.0}com.sap.bw.cwm.olap.InfoCube.bwDimension'):
+                        xp = './/'+'{com.sap.bi/metadata/1.0}com.sap.bw.cwm.olap.BWDimension[@xmi.id="'+child.attrib['xmi.idref']+'"]'
+                        elem_ref = content.find(xp)                        
+                        if elem_ref is not None:
+                            for child2 in elem_ref.findall('{com.sap.bi/metadata/1.0}com.sap.bw.cwm.olap.BWDimension.dimInfoObject'):
+                                xp = './/'+'{com.sap.bi/metadata/1.0}com.sap.bw.cwm.olap.DimInfoObject[@xmi.id="'+child2.attrib['xmi.idref']+'"]'
+                                elem_ref2 = content.find(xp)                        
+                                if elem_ref2 is not None:
+                                    content.remove(elem_ref2)
+                            for child2 in elem_ref.findall('{com.sap.bi/metadata/1.0}com.sap.bw.cwm.olap.BWDimension.descriptionLong'):
+                                xp = './/'+'{com.sap.bi/metadata/1.0}com.sap.bw.cwm.core.Description[@xmi.id="'+child2.attrib['xmi.idref']+'"]'
+                                elem_ref2 = content.find(xp)
+                                if elem_ref2 is not None:
+                                    content.remove(elem_ref2)
+                            for child2 in elem_ref.findall('{com.sap.bi/metadata/1.0}com.sap.bw.cwm.olap.BWDimension.descriptionShort'):
+                                xp = './/'+'{com.sap.bi/metadata/1.0}com.sap.bw.cwm.core.Description[@xmi.id="'+child2.attrib['xmi.idref']+'"]'
+                                elem_ref2 = content.find(xp)
+                                if elem_ref2 is not None:
+                                    content.remove(elem_ref2)
+                            content.remove(elem_ref)
+                    for child in elem.findall('{com.sap.bi/metadata/1.0}com.sap.bw.cwm.core.InfoObject.descriptionLong'):
+                        xp = './/'+'{com.sap.bi/metadata/1.0}com.sap.bw.cwm.core.Description[@xmi.id="'+child.attrib['xmi.idref']+'"]'
+                        elem_ref = content.find(xp)
+                        if elem_ref is not None:
+                            content.remove(elem_ref)
+                    for child in elem.findall('{com.sap.bi/metadata/1.0}com.sap.bw.cwm.core.InfoObject.descriptionShort'):
+                        xp = './/'+'{com.sap.bi/metadata/1.0}com.sap.bw.cwm.core.Description[@xmi.id="'+child.attrib['xmi.idref']+'"]'
+                        elem_ref = content.find(xp)
+                        if elem_ref is not None:
+                            content.remove(elem_ref)
+                    content.remove(elem)        
+        except Exception as e:
+            print(e.message)
+          
     def write(self, out_file, out_io_map_file):
         if out_file != '':
             self.doc.write(out_file)
@@ -384,6 +501,7 @@ if __name__ == '__main__':
     io_existing_file = ''
     no_description = False
     new_description = False
+    del_obsolete = False
 
     parser = ArgumentParser()
     parser.add_argument("-i", "--in_file", dest="xml_in",
@@ -405,6 +523,8 @@ if __name__ == '__main__':
                     help="remove the existing Description ojects")
     parser.add_argument("--new_description", dest="new_description", action='store_true',
                     help="create new Description objects from annotation tags")
+    parser.add_argument("--del_obsolete", dest="del_obsolete", action='store_true',
+                    help="delete object types that are obsolete in BW4")
     args = parser.parse_args()
 
     xml_in = args.xml_in
@@ -416,10 +536,16 @@ if __name__ == '__main__':
     io_existing_file = args.io_existing_file
     no_description = args.no_description
     new_description = args.new_description
+    compound = args.compound
+    del_obsolete = args.del_obsolete
         
     biXML = BiXML(xml_in, io_map_file, io_common_file, io_existing_file)
     biXML.dumpObjects(dump_out)
     biXML.convert(compound, True, True)
     biXML.clean_existing()
+    biXML.clean_messages()
+    if del_obsolete:
+        biXML.delete_obsolete()
     biXML.write(xml_out, io_map_file)
     biXML.dumpObjects(dump_out2)
+    print("DONE")
