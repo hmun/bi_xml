@@ -22,7 +22,7 @@ import uuid
 
 class IO:
 
-    def __init__(self, io_map_file, io_common_file, io_existing_file):
+    def __init__(self, io_map_file, io_common_file, io_existing_file, orig_system, start_char):
         with open(io_map_file, mode='r') as csv_file:
             reader = csv.reader(csv_file)
             self.io_map = {rows[0]:rows[1] for rows in reader}
@@ -32,6 +32,8 @@ class IO:
         with open(io_existing_file, 'r') as csv_file:
             reader = csv.reader(csv_file)
             self.existingObjects = {rows[0] for rows in reader}
+        self.orig_system = orig_system
+        self.start_char = start_char
         self.uuid_dic = {}
           
     def writeInfoObjectMap(self, outfile):    
@@ -45,7 +47,7 @@ class IO:
             if name in self.io_map.keys():
                 return self.io_map[name]
             else:
-                newname = 'X' + name[1:]
+                newname = self.start_char + name[1:]
                 newname = newname[:9]
                 self.io_map[name] = newname
         else:
@@ -105,7 +107,7 @@ class IO:
         split = name.split("__")
         return self.newName(split[0])+"__"+self.newName(split[1])
     def originalSystem(self):
-        return 'BHD'
+        return self.orig_system
     def owner(self):
         return ''
     def package(self):

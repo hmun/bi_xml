@@ -24,12 +24,12 @@ from DSO import DSO
 
 class BiXML:
 
-    def __init__(self, in_file, io_map_file, io_common_file, io_existing_file):
+    def __init__(self, in_file, io_map_file, io_common_file, io_existing_file, orig_system, text_language, start_char):
         if in_file == '':
             return
         ET.register_namespace('XMISAPBI', "com.sap.bi/metadata/1.0")
         xml_file_name = in_file
-        self.io = IO(io_map_file, io_common_file, io_existing_file)
+        self.io = IO(io_map_file, io_common_file, io_existing_file, orig_system, start_char)
         self.iam = IAM()
         self.dso = DSO()
         try:
@@ -39,6 +39,7 @@ class BiXML:
         self.out_tags = []
         self.out_xmid = []
         self.out_io = []
+        self.text_language = text_language
 
     def convert(self, add_comp, no_description, new_description):
         if self.doc is None:
@@ -137,7 +138,7 @@ class BiXML:
                             new_elem_ref.attrib['xmi.id'] = 'com.sap.bw.cwm.core.Description::'+new_uuid
                             new_elem_ref.attrib['name'] = new_uuid
                             new_elem_ref.attrib['annotation'] = ''
-                            new_elem_ref.attrib['language'] = 'EN'
+                            new_elem_ref.attrib['language'] = self.text_language
                             new_elem_ref.attrib['mimeType'] = 'text/plain'
                             new_elem_ref.attrib['isBinary'] = 'false'
                             new_child_ref = ET.Element('{com.sap.bi/metadata/1.0}com.sap.bw.cwm.core.Description.body')
@@ -275,7 +276,7 @@ class BiXML:
                         new_elem_ref.attrib['xmi.id'] = 'com.sap.bw.cwm.core.Description::'+new_uuid
                         new_elem_ref.attrib['name'] = new_uuid
                         new_elem_ref.attrib['annotation'] = ''
-                        new_elem_ref.attrib['language'] = 'EN'
+                        new_elem_ref.attrib['language'] = self.text_language
                         new_elem_ref.attrib['mimeType'] = 'text/plain'
                         new_elem_ref.attrib['isBinary'] = 'false'
                         new_child_ref = ET.Element('{com.sap.bi/metadata/1.0}com.sap.bw.cwm.core.Description.body')
@@ -337,7 +338,7 @@ class BiXML:
                         new_elem_ref.attrib['xmi.id'] = 'com.sap.bw.cwm.core.Description::'+new_uuid
                         new_elem_ref.attrib['name'] = new_uuid
                         new_elem_ref.attrib['annotation'] = ''
-                        new_elem_ref.attrib['language'] = 'EN'
+                        new_elem_ref.attrib['language'] = self.text_language
                         new_elem_ref.attrib['mimeType'] = 'text/plain'
                         new_elem_ref.attrib['isBinary'] = 'false'
                         new_child_ref = ET.Element('{com.sap.bi/metadata/1.0}com.sap.bw.cwm.core.Description.body')
@@ -519,6 +520,12 @@ if __name__ == '__main__':
 
     parser.add_argument("-p", "--compound", dest="compound", 
                     help="compound all new InfoObjects to InfoObject compound")
+    parser.add_argument("--start_char", dest="start_char", 
+                    help="set start character for InfoObject name (default = X)", default='X')
+    parser.add_argument("--orig_system", dest="orig_system", 
+                    help="set original system (default = BWD)", default='BWD')
+    parser.add_argument("--text_language", dest="text_language", 
+                    help="set text language (default = EN)", default='EN')
     parser.add_argument("--no_description", dest="no_description", action='store_true',
                     help="remove the existing Description ojects")
     parser.add_argument("--new_description", dest="new_description", action='store_true',
@@ -538,8 +545,11 @@ if __name__ == '__main__':
     new_description = args.new_description
     compound = args.compound
     del_obsolete = args.del_obsolete
+    orig_system = args.orig_system
+    text_language = args.text_language
+    start_char = args.start_char
         
-    biXML = BiXML(xml_in, io_map_file, io_common_file, io_existing_file)
+    biXML = BiXML(xml_in, io_map_file, io_common_file, io_existing_file, orig_system, text_language, start_char)
     biXML.dumpObjects(dump_out)
     biXML.convert(compound, True, True)
     biXML.clean_existing()
